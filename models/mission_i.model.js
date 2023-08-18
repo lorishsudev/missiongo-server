@@ -5,6 +5,7 @@ module.exports = mongoose => {
         description: String,
         gpsInfo: String,
         imageData: Buffer,
+        imageDataUrl: String
       },
       { versionKey: false , timestamps: true} 
       //{ timestamps: true }

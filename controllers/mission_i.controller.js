@@ -1,8 +1,15 @@
 const db = require("../models");
+const cloudinary = require('cloudinary').v2;
 const mission_i = db.mission_i
 
+cloudinary.config({
+  cloud_name: 'dzkoc5zt4',
+  api_key: '646562914861447',
+  api_secret: 'rX1zPAjQJ6GvWYCg2gVZ2OAomvs'
+});
+
 // // Create and Save a new mission_i
-exports.create = (req, res) => {
+exports.create = async (req, res) => {
 
   const { buffer } = req.file;
   const { description } = req.body;
@@ -12,22 +19,60 @@ exports.create = (req, res) => {
     return;
   }
 
+  const uploadImageToCloudinary = () =>
+    new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { resource_type: 'image' },
+        (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(result);
+          }
+        }
+      );
 
-  // Save mission_i in the database
-  mission_i
-    .create({
-      imageData: buffer,
-      description: description
+      uploadStream.end(buffer);
+    });
+
+  // Upload image to Cloudinary and handle the result
+  uploadImageToCloudinary()
+    .then(cloudinaryResult => {
+      // Save mission_i in the database
+      console.log(cloudinaryResult.secure_url)
+      const missionData = {
+        imageDataUrl: cloudinaryResult.secure_url, // Use the Cloudinary URL
+        description: description
+      };
+
+      return mission_i.create(missionData);
     })
     .then(data => {
       res.send(data);
     })
-    .catch(err => {
+    .catch(error => {
+      console.error('Error uploading image to Cloudinary:', error);
       res.status(500).send({
-        message:
-          err.message || "Some error occurred while creating the mission_i."
+        message: 'An error occurred while creating the mission_i.'
       });
     });
+
+
+  // Save mission_i in the database
+  // mission_i
+  //   .create({
+  //     imageData: buffer,
+  //     description: description
+  //   })
+  //   .then(data => {
+  //     res.send(data);
+  //   })
+  //   .catch(err => {
+  //     res.status(500).send({
+  //       message:
+  //         err.message || "Some error occurred while creating the mission_i."
+  //     });
+  //   });
 };
 
 // Retrieve all mission_is from the database.
